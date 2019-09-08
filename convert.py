@@ -123,7 +123,3 @@ extract_images()
 separate_forms()
 crop_all()
 compile_excel()
-
-
-#for page in pages:
-#    page.save('out.jpg', 'JPEG')
