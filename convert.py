@@ -2,6 +2,7 @@ import os
 from shutil import rmtree
 import pdf2image
 from PIL import Image
+import xlsxwriter
 
 form_dir = 'formulaires/'
 temp_dir = 'temp/'
@@ -57,6 +58,7 @@ def extract_images():
         print('Done!')
 
 def separate_forms():
+    print('Separating and sorting forms into folders...')
     for file in os.listdir(form_dir):
         filename, file_extension = os.path.splitext(file)
         actual = filename.replace(' ', '-')
@@ -68,6 +70,7 @@ def separate_forms():
             os.rename(temp_dir + actual + '/' + pics[pic], temp_dir + actual_form + '/' + pics[pic])
             os.rename(temp_dir + actual + '/' + pics[pic + 1], temp_dir + actual_form + '/' + pics[pic + 1])
             count += 1
+    print('Done!')
 
 def extract_part(file, lratio, tratio, wratio, hratio, output):
     im = Image.open(file)
@@ -81,18 +84,45 @@ def extract_part(file, lratio, tratio, wratio, hratio, output):
     area.save(os.path.dirname(os.path.abspath(file)) + '/' + output + ".jpg", "JPEG")
 
 def crop_all():
+    print('Cropping forms...')
     for file in os.listdir(form_dir):
         filename, file_extension = os.path.splitext(file)
         actual = filename.replace(' ', '-')
-        pics = os.listdir(temp_dir + actual)
         for folder in os.listdir(temp_dir + actual):
             pages = os.listdir(temp_dir + actual + '/' + folder)
             for crop in cropping_data:
                 extract_part(temp_dir + actual + '/' + folder + '/' + pages[crop[0]], crop[1], crop[2], crop[3], crop[4], crop[5])
+    print('Done!')
+
+def compile_excel():
+    print('Writing Excel document...')
+    for file in os.listdir(form_dir):
+        filename, file_extension = os.path.splitext(file)
+        actual = filename.replace(' ', '-')
+        workbook = xlsxwriter.Workbook('formulaire' + actual + '.xlsx')
+        worksheet = workbook.add_worksheet()
+        row = 1
+        worksheet.set_row(row, 85)
+        for folder in os.listdir(temp_dir + actual):
+            col = 'A'
+            col2ndchar = 'A'
+            worksheet.set_column(col + ':' + col, 200)
+            for crop in cropping_data:
+                print('Inserting ' + temp_dir + actual + '/' + folder + '/' + crop[5] + '.jpg' + ' in cell ' + col + str(row))
+                worksheet.insert_image(col + str(row), temp_dir + actual + '/' + folder + '/' + crop[5] + '.jpg')
+                if (len(col) == 1 and col < 'Z'):
+                    col = chr(ord(col) + 1)
+                else:
+                    col = 'A' + col2ndchar
+                    col2ndchar = chr(ord(col2ndchar) + 1)
+            row += 1
+        workbook.close()
+    print('Done!')
 
 extract_images()
 separate_forms()
 crop_all()
+compile_excel()
 
 
 #for page in pages:
